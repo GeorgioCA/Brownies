@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func
+from sqlalchemy import select, func, union_all
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,7 +72,7 @@ async def get_discovery(
     blocked_me_sub = select(BlockReport.reporter_id).where(
         BlockReport.reported_id == user.id, BlockReport.type == "block"
     )
-    all_exclude = swiped_sub.union(blocked_sub).union(blocked_me_sub)
+    all_exclude = union_all(swiped_sub, blocked_sub, blocked_me_sub)
     exclude_result = await db.execute(all_exclude)
     exclude_ids = {row[0] for row in exclude_result}
 
