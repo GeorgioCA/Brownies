@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -78,6 +79,11 @@ async def get_discovery(
     # Build query for discoverable users
     stmt = (
         select(User)
+        .options(
+            joinedload(User.photos),
+            joinedload(User.languages),
+            joinedload(User.voice_prompts),
+        )
         .where(
             User.id != user.id,
             User.profile_complete == True,
@@ -101,7 +107,7 @@ async def get_discovery(
         )
 
     result = await db.execute(stmt)
-    candidates = result.scalars().all()
+    candidates = result.unique().scalars().all()
 
     profiles = [_discovery_out(u, user) for u in candidates]
 

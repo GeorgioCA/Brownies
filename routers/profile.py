@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pathlib import Path
+from sqlalchemy.orm import joinedload
 import shutil
 import uuid
 
@@ -66,10 +66,13 @@ async def get_my_profile(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(User).where(User.id == user.id)
+        select(User).options(
+            joinedload(User.photos),
+            joinedload(User.languages),
+            joinedload(User.voice_prompts),
+        ).where(User.id == user.id)
     )
-    user = result.scalar_one()
-    return profile_to_out(user)
+    return profile_to_out(result.unique().scalar_one())
 
 
 @router.post("/setup", response_model=UserProfileOut)
@@ -102,8 +105,14 @@ async def setup_profile(
         db.add(UserLanguage(user_id=user.id, language=lang))
 
     await db.flush()
-    result = await db.execute(select(User).where(User.id == user.id))
-    return profile_to_out(result.scalar_one())
+    result = await db.execute(
+        select(User).options(
+            joinedload(User.photos),
+            joinedload(User.languages),
+            joinedload(User.voice_prompts),
+        ).where(User.id == user.id)
+    )
+    return profile_to_out(result.unique().scalar_one())
 
 
 @router.patch("/me", response_model=UserProfileOut)
@@ -116,8 +125,14 @@ async def update_profile(
         setattr(user, key, value)
     user.updated_at = datetime.now(timezone.utc)
     await db.flush()
-    result = await db.execute(select(User).where(User.id == user.id))
-    return profile_to_out(result.scalar_one())
+    result = await db.execute(
+        select(User).options(
+            joinedload(User.photos),
+            joinedload(User.languages),
+            joinedload(User.voice_prompts),
+        ).where(User.id == user.id)
+    )
+    return profile_to_out(result.unique().scalar_one())
 
 
 @router.post("/photos", response_model=UserPhotoOut)
@@ -265,8 +280,14 @@ async def get_user_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(User).where(User.id == user_id))
-    target = result.scalar_one_or_none()
+    result = await db.execute(
+        select(User).options(
+            joinedload(User.photos),
+            joinedload(User.languages),
+            joinedload(User.voice_prompts),
+        ).where(User.id == user_id)
+    )
+    target = result.unique().scalar_one_or_none()
     if not target:
         raise NotFoundException("User not found")
     return profile_to_out(target)
