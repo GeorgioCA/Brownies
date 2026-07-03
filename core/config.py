@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     FAMILY_SHARE_EXPIRE_DAYS: int = 7
     FAMILY_SHARE_TOKEN_LENGTH: int = 32
 
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_NAME: str = "Brownies"
+    NOTIFY_EMAIL: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

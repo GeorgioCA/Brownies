@@ -4,9 +4,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 from pathlib import Path
+from pydantic import BaseModel, EmailStr
 
 from core.config import settings
-from core.database import init_db, engine
+from core.database import init_db, engine, async_session
 from routers import auth, profile, discovery, matches, notifications, reports, family, verification, preferences, subscriptions, admin
 from websocket.handler import router as ws_router
 
@@ -85,6 +86,33 @@ app.mount("/admin", StaticFiles(directory="static/admin", html=True), name="admi
 @app.get("/api/v1/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME}
+
+
+class SubscribeRequest(BaseModel):
+    name: str
+    email: str
+
+
+@app.post("/api/subscribe")
+async def subscribe(req: SubscribeRequest):
+    from sqlalchemy import select
+    from models import WaitlistSubscriber
+    from core.mail import notify_new_subscriber
+
+    async with async_session() as db:
+        # Check if already subscribed
+        result = await db.execute(
+            select(WaitlistSubscriber).where(WaitlistSubscriber.email == req.email)
+        )
+        if result.scalar_one_or_none():
+            return {"success": True, "message": "You're already on the list!"}
+
+        db.add(WaitlistSubscriber(name=req.name, email=req.email))
+        await db.commit()
+
+    notify_new_subscriber(req.name, req.email)
+
+    return {"success": True, "message": "You're on the list!"}
 
 
 # Landing page

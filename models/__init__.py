@@ -189,3 +189,11 @@ class AppSetting(Base):
     __tablename__ = "app_settings"
     key = Column(String, primary_key=True)
     value = Column(Text, nullable=False)
+
+
+class WaitlistSubscriber(Base):
+    __tablename__ = "waitlist_subscribers"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
