@@ -102,6 +102,10 @@ tailwind.config = {
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2l9 4.5v7.1L12 18l-9-4.5V6.5L12 2z"/><path d="M12 2v16"/><path d="M3 6.5l9 4.5"/><path d="M21 6.5l-9 4.5"/></svg>
         Plans & Limits
       </button>
+      <button onclick="showTab('waitlist')" data-tab="waitlist" class="sidebar-link w-full text-left px-4 py-3 rounded-xl font-semibold text-sm text-brown-600 hover:bg-brown-100 hover:text-brown-800 transition flex items-center gap-3">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Waitlist
+      </button>
       <button onclick="showTab('stats')" data-tab="stats" class="sidebar-link w-full text-left px-4 py-3 rounded-xl font-semibold text-sm text-brown-600 hover:bg-brown-100 hover:text-brown-800 transition flex items-center gap-3">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Stats
@@ -298,6 +302,25 @@ tailwind.config = {
         </div>
       </div>
 
+      <!-- WAITLIST TAB -->
+      <div id="tab-waitlist" class="hidden">
+        <h2 class="text-2xl font-extrabold text-brown-900 mb-6">Waitlist Subscribers</h2>
+        <div class="bg-white rounded-card shadow-card border border-brown-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-brown-50 text-brown-600 font-semibold text-xs uppercase tracking-wider">
+                <tr>
+                  <th class="px-5 py-3 text-left">ID</th><th class="px-5 py-3 text-left">Name</th>
+                  <th class="px-5 py-3 text-left">Email</th><th class="px-5 py-3 text-left">Date</th>
+                </tr>
+              </thead>
+              <tbody id="waitlistTableBody" class="divide-y divide-brown-100"></tbody>
+            </table>
+          </div>
+          <div id="waitlistPagination" class="px-5 py-3 flex items-center justify-between border-t border-brown-100"></div>
+        </div>
+      </div>
+
       <!-- STATS TAB -->
       <div id="tab-stats" class="hidden">
         <h2 class="text-2xl font-extrabold text-brown-900 mb-6">Statistics</h2>
@@ -362,7 +385,7 @@ tailwind.config = {
 const API = '/api/v1';
 let token = localStorage.getItem('brownies_admin_token');
 let currentTab = 'dashboard';
-let userPage = 1, photoPage = 1, voicePage = 1, reportPage = 1, subPage = 1, chatPage = 1;
+let userPage = 1, photoPage = 1, voicePage = 1, reportPage = 1, subPage = 1, chatPage = 1, waitlistPage = 1;
 
 // ── AUTH ──
 async function doLogin(e) {
@@ -426,6 +449,7 @@ function showTab(name) {
   else if (name === 'reports') loadReports();
   else if (name === 'subscriptions') loadSubscriptions();
   else if (name === 'plans') loadPlansAndLimits();
+  else if (name === 'waitlist') loadWaitlist();
   else if (name === 'stats') loadStats();
 }
 
@@ -451,6 +475,7 @@ async function loadDashboard() {
       <div><span class="text-brown-400">Photos</span> <span class="font-bold text-brown-800 ml-2">${d.total_photos}</span></div>
       <div><span class="text-brown-400">Swipes</span> <span class="font-bold text-brown-800 ml-2">${d.total_swipes}</span></div>
       <div><span class="text-brown-400">Messages</span> <span class="font-bold text-brown-800 ml-2">${d.total_messages}</span></div>
+      <div><span class="text-brown-400">Waitlist</span> <span class="font-bold text-brown-800 ml-2">${d.total_waitlist}</span></div>
     `;
   } catch (e) { showToast(e.message, 'error'); }
 }
@@ -849,6 +874,25 @@ async function saveLimits() {
   catch (e) { showToast(e.message, 'error'); }
 }
 
+// ── WAITLIST ──
+async function loadWaitlist(page = 1) {
+  waitlistPage = page;
+  try {
+    const data = await api(`/admin/waitlist?page=${page}&per_page=50`);
+    document.getElementById('waitlistTableBody').innerHTML = (data.length === 0)
+      ? '<tr><td colspan="4" class="px-5 py-12 text-center text-brown-400">No subscribers yet</td></tr>'
+      : data.map(w => `
+        <tr class="hover:bg-brown-50 transition">
+          <td class="px-5 py-3 font-mono text-brown-400">#${w.id}</td>
+          <td class="px-5 py-3 font-semibold text-brown-800">${esc(w.name)}</td>
+          <td class="px-5 py-3 text-brown-600">${esc(w.email)}</td>
+          <td class="px-5 py-3 text-brown-500 text-xs">${fmtDate(w.created_at)}</td>
+        </tr>
+      `).join('');
+    renderPagination('waitlist', waitlistPage, data.length >= 50);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
 // ── STATS ──
 async function loadStats() {
   try {
@@ -884,7 +928,7 @@ async function loadStats() {
 function renderPagination(prefix, page, hasMore) {
   const el = document.getElementById(`${prefix}Pagination`);
   if (!el) return;
-  const fnMap = { users: 'loadUsers', photos: 'loadPhotos', voice: 'loadVoicePrompts', reports: 'loadReports', subs: 'loadSubscriptions', chats: 'loadChats' };
+  const fnMap = { users: 'loadUsers', photos: 'loadPhotos', voice: 'loadVoicePrompts', reports: 'loadReports', subs: 'loadSubscriptions', chats: 'loadChats', waitlist: 'loadWaitlist' };
   el.innerHTML = `
     <span class="text-sm text-brown-500">Page ${page}</span>
     <div class="flex gap-2">

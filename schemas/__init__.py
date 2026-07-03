@@ -344,6 +344,7 @@ class AdminDashboardOut(BaseModel):
     total_photos: int = 0
     total_swipes: int = 0
     total_messages: int = 0
+    total_waitlist: int = 0
 
 
 class AdminReportOut(BaseModel):
@@ -503,6 +504,14 @@ class AdminLimitsUpdateRequest(BaseModel):
     max_photo_size_mb: Optional[int] = None
     max_voice_duration_seconds: Optional[int] = None
     family_share_expire_days: Optional[int] = None
+
+
+class AdminWaitlistOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    created_at: datetime
+    model_config = {"from_attributes": True}
 
 
 # ── Common ──

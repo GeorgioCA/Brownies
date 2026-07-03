@@ -10,14 +10,14 @@ from core.auth_deps import get_current_admin
 from core.exceptions import NotFoundException, ValidationException
 from models import (
     User, UserPhoto, UserLanguage, VoicePrompt, Match, Swipe, Message,
-    BlockReport, Notification, Subscription, Plan, AppSetting,
+    BlockReport, Notification, Subscription, Plan, AppSetting, WaitlistSubscriber,
 )
 from schemas import (
     AdminDashboardOut, AdminReportOut, AdminHandleReportRequest,
     AdminUserOut, AdminUserDetailOut, AdminPhotoOut, AdminVoicePromptOut,
     AdminSubscriptionOut, AdminChatOut, AdminMessageOut,
     AdminUserUpdateRequest, AdminPlanOut, AdminPlanSaveRequest,
-    AdminLimitsOut, AdminLimitsUpdateRequest, SuccessResponse,
+    AdminLimitsOut, AdminLimitsUpdateRequest, AdminWaitlistOut, SuccessResponse,
 )
 
 router = APIRouter(prefix=f"{settings.API_V1_PREFIX}/admin", tags=["admin"])
@@ -46,6 +46,7 @@ async def get_dashboard(
     total_photos = (await db.execute(select(func.count()).select_from(UserPhoto))).scalar()
     total_swipes = (await db.execute(select(func.count()).select_from(Swipe))).scalar()
     total_messages = (await db.execute(select(func.count()).select_from(Message))).scalar()
+    total_waitlist = (await db.execute(select(func.count()).select_from(WaitlistSubscriber))).scalar()
 
     return AdminDashboardOut(
         total_users=total_users,
@@ -56,6 +57,7 @@ async def get_dashboard(
         total_photos=total_photos,
         total_swipes=total_swipes,
         total_messages=total_messages,
+        total_waitlist=total_waitlist,
     )
 
 
@@ -556,6 +558,23 @@ async def handle_report(
     await db.delete(report)
     await db.flush()
     return SuccessResponse(message=f"Report handled: {req.action}")
+
+
+@router.get("/waitlist", response_model=list[AdminWaitlistOut])
+async def get_waitlist(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=200),
+    admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = (
+        select(WaitlistSubscriber)
+        .order_by(WaitlistSubscriber.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
+    result = await db.execute(stmt)
+    return [AdminWaitlistOut.model_validate(s) for s in result.scalars().all()]
 
 
 @router.get("/stats/gender")
