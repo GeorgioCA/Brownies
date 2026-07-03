@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -84,3 +85,11 @@ app.mount("/admin", StaticFiles(directory="static/admin", html=True), name="admi
 @app.get("/api/v1/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME}
+
+
+# Landing page
+landing_path = Path("static/landing/index.html")
+if landing_path.exists():
+    @app.get("/", response_class=HTMLResponse)
+    async def landing():
+        return landing_path.read_text(encoding="utf-8")
