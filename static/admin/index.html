@@ -371,7 +371,7 @@ tailwind.config = {
     </div>
     <form id="planForm" onsubmit="savePlan(event)" class="p-6 space-y-4">
       <div><label class="block text-sm font-semibold text-brown-700 mb-1">Name</label><input name="name" required class="w-full px-3 py-2 border border-brown-200 rounded-xl text-sm focus:outline-none focus:border-brown-500"></div>
-      <div><label class="block text-sm font-semibold text-brown-700 mb-1">Price (paise)</label><input name="price_paise" type="number" required class="w-full px-3 py-2 border border-brown-200 rounded-xl text-sm focus:outline-none focus:border-brown-500"></div>
+      <div><label class="block text-sm font-semibold text-brown-700 mb-1">Price (paise — ₹1 = 100 paise)</label><input name="price_paise" type="number" required oninput="document.getElementById('priceHint').textContent = '₹' + (parseInt(this.value || 0) / 100).toFixed(2)" class="w-full px-3 py-2 border border-brown-200 rounded-xl text-sm focus:outline-none focus:border-brown-500"><p id="priceHint" class="text-xs text-brown-400 mt-1">₹0.00</p></div>
       <div><label class="block text-sm font-semibold text-brown-700 mb-1">Duration (days)</label><input name="duration_days" type="number" required class="w-full px-3 py-2 border border-brown-200 rounded-xl text-sm focus:outline-none focus:border-brown-500"></div>
       <div class="flex items-center gap-3"><label class="text-sm font-semibold text-brown-700">Active</label><input name="is_active" type="checkbox" class="w-5 h-5 rounded border-brown-300 text-brown-700 focus:ring-brown-500"></div>
       <div><label class="block text-sm font-semibold text-brown-700 mb-1">Sort Order</label><input name="sort_order" type="number" value="0" class="w-full px-3 py-2 border border-brown-200 rounded-xl text-sm focus:outline-none focus:border-brown-500"></div>
@@ -758,7 +758,8 @@ let plansList = [];
 let editingPlanId = null;
 
 async function loadPlansAndLimits() {
-  await Promise.all([loadPlans(), loadLimits()]);
+  const results = await Promise.allSettled([loadPlans(), loadLimits()]);
+  results.forEach(r => { if (r.status === 'rejected') showToast(r.reason?.message || 'Failed', 'error'); });
 }
 
 async function loadPlans() {
@@ -799,6 +800,7 @@ function openPlanModal(id = null) {
     title.textContent = 'Edit Plan';
     form.name.value = plan.name;
     form.price_paise.value = plan.price_paise;
+    document.getElementById('priceHint').textContent = '₹' + (plan.price_paise / 100).toFixed(2);
     form.duration_days.value = plan.duration_days;
     form.is_active.checked = plan.is_active;
     form.sort_order.value = plan.sort_order;
@@ -806,6 +808,7 @@ function openPlanModal(id = null) {
     title.textContent = 'Add Plan';
     form.reset();
     form.is_active.checked = true;
+    document.getElementById('priceHint').textContent = '₹0.00';
   }
   modal.classList.remove('hidden');
 }
@@ -840,6 +843,11 @@ async function savePlan(e) {
 }
 
 async function deletePlan(id) {
+  const plan = plansList.find(p => p.id === id);
+  if (plan && plan.price_paise === 0 && plan.duration_days === 0) {
+    showToast('Cannot delete the Free plan', 'error');
+    return;
+  }
   if (!confirm('Delete this plan?')) return;
   try { await api(`/admin/plans/${id}`, { method: 'DELETE' }); showToast('Plan deleted', 'success'); loadPlans(); }
   catch (e) { showToast(e.message, 'error'); }

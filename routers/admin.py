@@ -424,6 +424,8 @@ async def delete_plan(
     plan = result.scalar_one_or_none()
     if not plan:
         raise NotFoundException("Plan not found")
+    if plan.price_paise == 0 and plan.duration_days == 0:
+        raise ValidationException("Cannot delete the Free plan")
     await db.delete(plan)
     await db.flush()
     return SuccessResponse(message="Plan deleted")
