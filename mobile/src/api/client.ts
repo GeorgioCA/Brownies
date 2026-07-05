@@ -246,7 +246,8 @@ export const reportsApi = {
 export const verificationApi = {
   getStatus: () => apiClient.get('/verification/status'),
   sendPhoneOtp: () => apiClient.post('/verification/phone/send-otp'),
-  verifyPhone: (otp: string) => apiClient.post('/verification/phone/verify', { otp }),
+  verifyPhone: (otp: string) =>
+    apiClient.post('/verification/phone/verify', null, { params: { otp } }),
   submitPhoto: (fileUri: string) => {
     const formData = new FormData();
     formData.append('file', {
@@ -266,7 +267,7 @@ export const subscriptionsApi = {
   getPlans: () => apiClient.get('/subscriptions/plans'),
   getMySubscription: () => apiClient.get('/subscriptions/me'),
   createOrder: (plan_id: number) =>
-    apiClient.post('/subscriptions/order', { plan_id }),
+    apiClient.post('/subscriptions/order', null, { params: { plan_id } }),
   verifyPayment: (data: Record<string, unknown>) =>
     apiClient.post('/subscriptions/verify', data),
   cancel: () => apiClient.post('/subscriptions/cancel'),
