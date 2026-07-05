@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../theme';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
+import { apiErrorToString } from '../utils/helpers';
 
 const STEPS = ['Name & DOB', 'Gender & Intent', 'City & Bio', 'Photo'];
 
@@ -79,7 +80,7 @@ export default function ProfileSetupScreen({ navigation }: any) {
       await profileApi.uploadPhoto(selectedPhoto);
       return 'uploaded';
     } catch (err: any) {
-      Alert.alert('Upload Failed', err.response?.data?.detail || 'Could not upload photo. You can add one later.');
+      Alert.alert('Upload Failed', apiErrorToString(err, 'Could not upload photo. You can add one later.'));
       return null;
     }
   }, [selectedPhoto]);
@@ -120,7 +121,7 @@ export default function ProfileSetupScreen({ navigation }: any) {
 
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.detail || 'Failed to setup profile');
+      Alert.alert('Error', apiErrorToString(err, 'Failed to setup profile'));
     } finally {
       setLoading(false);
     }

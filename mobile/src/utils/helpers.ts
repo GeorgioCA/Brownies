@@ -104,3 +104,21 @@ export function formatDistance(km: number | null): string {
   if (km < 1) return '<1 km';
   return `${Math.round(km)} km`;
 }
+
+/**
+ * Convert API error to a readable string.
+ * FastAPI returns `detail` as either a string or an array of errors.
+ */
+export function apiErrorToString(err: any, fallback: string): string {
+  if (!err) return fallback;
+  const detail = err.response?.data?.detail || err.message;
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((e: any) => (typeof e === 'string' ? e : e.msg || e.message || JSON.stringify(e)))
+      .join('\n');
+  }
+  if (typeof detail === 'object') return detail.msg || detail.message || fallback;
+  return String(detail);
+}

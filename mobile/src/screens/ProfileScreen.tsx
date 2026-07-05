@@ -14,6 +14,7 @@ import { colors, radii, shadows } from '../theme';
 import { useProfileStore } from '../stores/profileStore';
 import { useAuthStore } from '../stores/authStore';
 import { calculateAge, getIntentLabel } from '../utils/helpers';
+import { apiErrorToString } from '../utils/helpers';
 
 export default function ProfileScreen(navigation: any): any {
   const insets = useSafeAreaInsets();

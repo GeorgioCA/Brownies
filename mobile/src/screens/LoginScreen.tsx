@@ -30,7 +30,7 @@ export default function LoginScreen(navigation: any): any {
       await login(phone, password);
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.detail || 'Login failed');
+      Alert.alert('Error', apiErrorToString(err, 'Login failed'));
     } finally {
       setLoading(false);
     }

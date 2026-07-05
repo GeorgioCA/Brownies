@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../theme';
 import { useDiscoveryStore } from '../stores/discoveryStore';
 import { getIntentLabel, getIntentColors, formatDistance } from '../utils/helpers';
+import { apiErrorToString } from '../utils/helpers';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;

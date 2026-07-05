@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../theme';
 import { isValidOtp } from '../utils/helpers';
+import { apiErrorToString } from '../utils/helpers';
 import { useAuthStore } from '../stores/authStore';
 
 export default function OTPVerifyScreen({ route, navigation }: any) {
@@ -38,7 +39,7 @@ export default function OTPVerifyScreen({ route, navigation }: any) {
     } catch (err: any) {
       Alert.alert(
         'Error',
-        err.response?.data?.detail || 'Invalid or expired OTP'
+        apiErrorToString(err, 'Invalid or expired OTP')
       );
     } finally {
       setLoading(false);

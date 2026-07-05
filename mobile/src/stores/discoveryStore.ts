@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { discoveryApi } from '../api/client';
+import { apiErrorToString } from '../utils/helpers';
 
 interface DiscoveryPhoto {
   id: number;

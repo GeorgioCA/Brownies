@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { matchesApi } from '../api/client';
+import { apiErrorToString } from '../utils/helpers';
 
 interface UserSummary {
   id: number;

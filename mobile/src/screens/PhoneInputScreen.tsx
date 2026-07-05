@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../theme';
 import { isValidPhone } from '../utils/helpers';
+import { apiErrorToString } from '../utils/helpers';
 import { useAuthStore } from '../stores/authStore';
 
 export default function PhoneInputScreen({ navigation }: any) {
@@ -32,7 +33,7 @@ export default function PhoneInputScreen({ navigation }: any) {
     } catch (err: any) {
       Alert.alert(
         'Error',
-        err.response?.data?.detail || 'Failed to send OTP'
+        apiErrorToString(err, 'Failed to send OTP')
       );
     } finally {
       setLoading(false);

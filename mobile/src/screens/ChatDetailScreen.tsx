@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../theme';
 import { useMatchStore } from '../stores/matchStore';
 import { timeAgo } from '../utils/helpers';
+import { apiErrorToString } from '../utils/helpers';
 
 export default function ChatDetailScreen({ route, navigation }: any) {
   const { matchId, userId, userName } = route.params;

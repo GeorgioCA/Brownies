@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { authApi, profileApi } from '../api/client';
+import { apiErrorToString } from '../utils/helpers';
 
 interface AuthState {
   token: string | null;

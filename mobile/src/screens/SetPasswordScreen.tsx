@@ -36,7 +36,7 @@ export default function SetPasswordScreen({ route, navigation }: any) {
         { text: 'Continue', onPress: () => navigation.navigate('ProfileSetup') },
       ]);
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.detail || 'Failed to set password');
+      Alert.alert('Error', apiErrorToString(err, 'Failed to set password'));
     } finally {
       setLoading(false);
     }

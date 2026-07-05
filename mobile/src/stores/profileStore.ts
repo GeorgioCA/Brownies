@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { profileApi } from '../api/client';
+import { apiErrorToString } from '../utils/helpers';
 
 interface Photo {
   id: number;
@@ -85,7 +86,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
       set({ profile: data, isLoading: false });
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Failed to load profile',
+        error: apiErrorToString(err, 'Failed to load profile'),
         isLoading: false,
       });
     }
@@ -98,7 +99,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
       set({ profile: data, isLoading: false });
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Failed to save profile',
+        error: apiErrorToString(err, 'Failed to save profile'),
         isLoading: false,
       });
       throw err;
@@ -112,7 +113,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
       set({ profile: data, isLoading: false });
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Failed to update profile',
+        error: apiErrorToString(err, 'Failed to update profile'),
         isLoading: false,
       });
     }
@@ -122,12 +123,11 @@ export const useProfileStore = create<ProfileState>((set) => ({
     set({ error: null });
     try {
       await profileApi.uploadPhoto(uri);
-      // Refresh profile to get updated photos
       const { data } = await profileApi.getMyProfile();
       set({ profile: data });
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Failed to upload photo',
+        error: apiErrorToString(err, 'Failed to upload photo'),
       });
     }
   },
@@ -140,17 +140,15 @@ export const useProfileStore = create<ProfileState>((set) => ({
       set({ profile: data });
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Failed to delete photo',
+        error: apiErrorToString(err, 'Failed to delete photo'),
       });
     }
   },
 
   fetchPreferences: async () => {
     try {
-      const { data } = await profileApi.update({}); // placeholder
-      // Preferences have their own endpoint
+      const { data } = await profileApi.update({});
     } catch {}
-    // Attempt real fetch
     try {
       const { default: { get } } = await import('../api/client');
       const { data } = await get('/preferences');
@@ -165,7 +163,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
       set({ preferences: data });
     } catch (err: any) {
       set({
-        error: err.response?.data?.detail || 'Failed to update preferences',
+        error: apiErrorToString(err, 'Failed to update preferences'),
       });
     }
   },
