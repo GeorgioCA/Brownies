@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Brownies",
+    "slug": "brownies",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FCF8F3",
+    "splash": {
+      "backgroundColor": "#2D1810",
+      "image": "./assets/icon.png",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.brownies.app"
+    },
+    "android": {
+      "package": "com.brownies.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#2D1810",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-av"
+    ],
+    "extra": {
+      "apiUrl": "http://10.0.2.2:8000/api/v1"
+    }
+  }
+}
