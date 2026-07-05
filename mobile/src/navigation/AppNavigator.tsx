@@ -74,7 +74,7 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, profileComplete } = useAuthStore();
 
   if (isLoading) {
     return <SplashScreen />;
@@ -93,8 +93,20 @@ export default function AppNavigator() {
             <Stack.Screen name="SetPassword" component={SetPasswordScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
           </>
+        ) : profileComplete ? (
+          // Main app (profile already set up)
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen
+              name="ChatDetail"
+              component={ChatDetailScreen}
+              options={{ headerShown: true, headerStyle: { backgroundColor: colors.white } }}
+            />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+          </>
         ) : (
-          // Onboarding + Main app
+          // Onboarding (new user, no profile yet)
           <>
             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
             <Stack.Screen name="MainTabs" component={MainTabs} />

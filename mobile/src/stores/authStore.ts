@@ -93,14 +93,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           token,
           refreshToken,
           isAuthenticated: true,
-          isLoading: false,
         });
-        // Check profile completeness
+        // Check profile completeness BEFORE ending loading state
         try {
           const { data } = await profileApi.getMyProfile();
-          set({ profileComplete: data.profile_complete ?? true });
+          set({
+            profileComplete: data.profile_complete ?? true,
+            isLoading: false,
+          });
         } catch {
-          // Token expired, refresh will handle it
+          // Token expired — clear it and show login
+          await SecureStore.deleteItemAsync('access_token');
+          await SecureStore.deleteItemAsync('refresh_token');
+          set({
+            token: null,
+            refreshToken: null,
+            isAuthenticated: false,
+            profileComplete: false,
+            isLoading: false,
+          });
         }
       } else {
         set({ isLoading: false });
