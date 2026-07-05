@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radii, shadows, typography } from '../theme';
+import { colors, radii, shadows } from '../theme';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
 
@@ -27,11 +28,10 @@ const INTENTS = [
 
 const GENDERS = ['male', 'female'];
 
-export default function ProfileSetupScreen(navigation: any): any {
+export default function ProfileSetupScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const isNewUser = useAuthStore((s) => s.isNewUser);
   const setupProfile = useProfileStore((s) => s.setupProfile);
 
   // Form state
@@ -41,11 +41,53 @@ export default function ProfileSetupScreen(navigation: any): any {
   const [intent, setIntent] = useState('lets_see');
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  // Auto-format DOB with dashes
+  const formatDob = useCallback((text: string) => {
+    const digits = text.replace(/\D/g, '');
+    let formatted = '';
+    if (digits.length <= 4) {
+      formatted = digits;
+    } else if (digits.length <= 6) {
+      formatted = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+    } else {
+      formatted = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+    }
+    setDob(formatted);
+  }, []);
+
+  const pickImage = useCallback(async () => {
+    try {
+      const { launchImageLibraryAsync, MediaTypeOptions } = await import('expo-image-picker');
+      const result = await launchImageLibraryAsync({
+        mediaTypes: MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets?.[0]) {
+        setSelectedPhoto(result.assets[0].uri);
+      }
+    } catch {}
+  }, []);
+
+  // Upload photo to backend
+  const uploadPhoto = useCallback(async (): Promise<string | null> => {
+    if (!selectedPhoto) return null;
+    try {
+      const { profileApi } = await import('../api/client');
+      await profileApi.uploadPhoto(selectedPhoto);
+      return 'uploaded';
+    } catch (err: any) {
+      Alert.alert('Upload Failed', err.response?.data?.detail || 'Could not upload photo. You can add one later.');
+      return null;
+    }
+  }, [selectedPhoto]);
 
   const handleNext = useCallback(async () => {
     if (step === 0) {
       if (!name || name.length < 2) { Alert.alert('Required', 'Enter your name'); return; }
-      if (!dob || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) { Alert.alert('Invalid', 'Use YYYY-MM-DD format'); return; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) { Alert.alert('Invalid', 'Use YYYY-MM-DD format'); return; }
     }
     if (step === 1) {
       if (!gender) { Alert.alert('Required', 'Select your gender'); return; }
@@ -59,7 +101,7 @@ export default function ProfileSetupScreen(navigation: any): any {
       return;
     }
 
-    // Submit
+    // Step 4 — submit profile
     setLoading(true);
     try {
       await setupProfile({
@@ -72,13 +114,17 @@ export default function ProfileSetupScreen(navigation: any): any {
         languages: ['en'],
         preferred_language: 'en',
       });
+
+      // Upload photo after profile is created
+      await uploadPhoto();
+
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.detail || 'Failed to setup profile');
     } finally {
       setLoading(false);
     }
-  }, [step, name, dob, gender, intent, city, bio, setupProfile, navigation]);
+  }, [step, name, dob, gender, intent, city, bio, setupProfile, navigation, uploadPhoto]);
 
   return (
     <KeyboardAvoidingView
@@ -121,9 +167,11 @@ export default function ProfileSetupScreen(navigation: any): any {
               <TextInput
                 style={styles.input}
                 value={dob}
-                onChangeText={setDob}
-                placeholder="DOB (YYYY-MM-DD)"
+                onChangeText={formatDob}
+                placeholder="YYYY-MM-DD"
                 placeholderTextColor={colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={10}
               />
             </View>
           </>
@@ -206,13 +254,18 @@ export default function ProfileSetupScreen(navigation: any): any {
         )}
 
         {step === 3 && (
-          <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoIcon}>📸</Text>
-            <Text style={styles.photoText}>
-              Add a photo to get started
-            </Text>
-            <TouchableOpacity style={styles.photoButton}>
-              <Text style={styles.photoButtonText}>Upload Photo</Text>
+          <View style={styles.photoContainer}>
+            {selectedPhoto ? (
+              <Image source={{ uri: selectedPhoto }} style={styles.previewImage} />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Text style={styles.photoIcon}>📸</Text>
+              </View>
+            )}
+            <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
+              <Text style={styles.photoButtonText}>
+                {selectedPhoto ? 'Change Photo' : 'Upload Photo'}
+              </Text>
             </TouchableOpacity>
             <Text style={styles.photoHint}>
               You can add more photos later
@@ -312,9 +365,24 @@ const styles = StyleSheet.create({
   optionPillTextActive: {
     color: colors.white,
   },
-  photoPlaceholder: { alignItems: 'center', paddingTop: 40 },
-  photoIcon: { fontSize: 48, marginBottom: 16 },
-  photoText: { fontSize: 16, color: colors.textMuted, marginBottom: 20 },
+  photoContainer: { alignItems: 'center', paddingTop: 20 },
+  photoPlaceholder: {
+    width: 200,
+    height: 200,
+    borderRadius: 20,
+    backgroundColor: colors.brown200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  previewImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 20,
+    marginBottom: 20,
+    resizeMode: 'cover',
+  },
+  photoIcon: { fontSize: 48 },
   photoButton: {
     backgroundColor: colors.brown700,
     paddingHorizontal: 32,

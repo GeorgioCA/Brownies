@@ -126,10 +126,8 @@ export const profileApi = {
       uri: fileUri,
       type: 'image/jpeg',
       name: 'photo.jpg',
-    } as unknown as Blob);
-    return apiClient.post('/profile/photos', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    } as any);
+    return apiClient.post('/profile/photos', formData);
   },
 
   deletePhoto: (photoId: number) =>
@@ -146,11 +144,9 @@ export const profileApi = {
       uri: fileUri,
       type: 'audio/m4a',
       name: 'voice.m4a',
-    } as unknown as Blob);
+    } as any);
     formData.append('prompt_question', prompt_question);
-    return apiClient.post('/profile/voice-prompts', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return apiClient.post('/profile/voice-prompts', formData);
   },
 
   deleteVoicePrompt: (id: number) =>
@@ -254,10 +250,8 @@ export const verificationApi = {
       uri: fileUri,
       type: 'image/jpeg',
       name: 'verification.jpg',
-    } as unknown as Blob);
-    return apiClient.post('/verification/photo', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    } as any);
+    return apiClient.post('/verification/photo', formData);
   },
 };
 
