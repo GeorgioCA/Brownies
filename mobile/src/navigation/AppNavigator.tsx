@@ -92,7 +92,7 @@ export default function AppNavigator() {
             <Stack.Screen name="OTPVerify" component={OTPVerifyScreen} />
             <Stack.Screen name="SetPassword" component={SetPasswordScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
-          />
+          </>
         ) : (
           // Onboarding + Main app
           <>
