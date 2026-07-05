@@ -88,12 +88,11 @@ export default function AppNavigator() {
         {!isAuthenticated ? (
           // Auth flow
           <>
-            <Stack.Screen name="Splash" component={SplashScreen} />
             <Stack.Screen name="PhoneInput" component={PhoneInputScreen} />
             <Stack.Screen name="OTPVerify" component={OTPVerifyScreen} />
             <Stack.Screen name="SetPassword" component={SetPasswordScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
-          </>
+          />
         ) : (
           // Onboarding + Main app
           <>
