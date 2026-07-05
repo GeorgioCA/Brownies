@@ -4,11 +4,14 @@ import {
   FlatList, StyleSheet, KeyboardAvoidingView, Platform,
 } from "react-native";
 import api from "../api/client";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function ChatScreen({ route }) {
   const { matchId, name } = route.params;
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
   const flatRef = useRef(null);
 
   useEffect(() => {
@@ -28,18 +31,23 @@ export default function ChatScreen({ route }) {
 
   async function send() {
     const trimmed = text.trim();
-    if (!trimmed) return;
-    setText("");
+    if (!trimmed || sending) return;
+    setSending(true);
     try {
       await api(`/matches/${matchId}/messages`, {
         method: "POST",
         body: JSON.stringify({ message_type: "text", content: trimmed }),
       });
+      setText("");
       loadMessages();
     } catch (e) {
       console.error(e);
+    } finally {
+      setSending(false);
     }
   }
+
+  const myId = user?.id;
 
   return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
@@ -49,7 +57,7 @@ export default function ChatScreen({ route }) {
         keyExtractor={(m) => String(m.id)}
         inverted
         renderItem={({ item }) => (
-          <View style={[s.bubble, item.sender_id === 0 ? s.my : s.their]}>
+          <View style={[s.bubble, item.sender_id === myId ? s.my : s.their]}>
             <Text style={s.msgText}>{item.content}</Text>
             <Text style={s.time}>{new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
           </View>
@@ -65,8 +73,8 @@ export default function ChatScreen({ route }) {
           onSubmitEditing={send}
           returnKeyType="send"
         />
-        <TouchableOpacity style={s.sendBtn} onPress={send}>
-          <Text style={s.sendText}>Send</Text>
+        <TouchableOpacity style={[s.sendBtn, sending && s.disabled]} onPress={send} disabled={sending}>
+          <Text style={s.sendText}>{sending ? "..." : "Send"}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -91,4 +99,5 @@ const s = StyleSheet.create({
   },
   sendBtn: { backgroundColor: "#6b3f2e", borderRadius: 60, paddingHorizontal: 22, paddingVertical: 12 },
   sendText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  disabled: { opacity: 0.5 },
 });

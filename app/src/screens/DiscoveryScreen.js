@@ -39,11 +39,14 @@ export default function DiscoveryScreen() {
       if (res.matched) {
         console.log("MATCH!", res.match_id);
       }
+      setCurrent((c) => {
+        const next = c + 1;
+        if (next >= profiles.length - 3) loadProfiles().catch(console.error);
+        return next;
+      });
     } catch (e) {
       console.error(e);
     }
-    setCurrent((c) => c + 1);
-    if (current >= profiles.length - 3) loadProfiles();
   }
 
   if (loading) return <View style={s.centered}><ActivityIndicator size="large" color="#6b3f2e" /></View>;

@@ -3,8 +3,9 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert,
 } from "react-native";
-import { api } from "../api/client";
+import { api, setTokens } from "../api/client";
 import { useAuth } from "../contexts/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function OtpScreen({ route, navigation }) {
   const { phone, otpHint } = route.params;
@@ -32,7 +33,9 @@ export default function OtpScreen({ route, navigation }) {
       if (res.profile_complete) {
         await login(res.access_token, res.refresh_token);
       } else {
-        await login(res.access_token, res.refresh_token);
+        await AsyncStorage.setItem("token", res.access_token);
+        await AsyncStorage.setItem("refreshToken", res.refresh_token);
+        setTokens(res.access_token, res.refresh_token);
         navigation.reset({ index: 0, routes: [{ name: "SetupProfile" }] });
       }
     } catch (e) {

@@ -3,8 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, Alert,
 } from "react-native";
-import { api, setTokens } from "../api/client";
-import { useAuth } from "../contexts/AuthContext";
+import { api } from "../api/client";
 
 export default function PhoneScreen({ navigation }) {
   const [phone, setPhone] = useState("");

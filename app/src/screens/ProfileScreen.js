@@ -31,10 +31,10 @@ export default function ProfileScreen({ navigation }) {
     if (!permission.granted) return Alert.alert("Permission required");
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.8,
     });
-    if (!result.canceled) {
+    if (!result.canceled && result.assets?.length) {
       const uri = result.assets[0].uri;
       const formData = new FormData();
       formData.append("file", { uri, name: "photo.jpg", type: "image/jpeg" });
