@@ -19,6 +19,6 @@
       },
       "package": "com.brownies.app"
     },
-    "plugins": ["react-native-reanimated"]
+    "plugins": []
   }
 }
