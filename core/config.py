@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "Brownies"
     NOTIFY_EMAIL: str = ""
 
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

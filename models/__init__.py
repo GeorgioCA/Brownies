@@ -170,6 +170,8 @@ class Subscription(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     plan_type = Column(String, nullable=False)
+    plan_id = Column(Integer, ForeignKey("plans.id", ondelete="SET NULL"), nullable=True)
+    payment_id = Column(String, nullable=True, index=True)
     starts_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     ends_at = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
