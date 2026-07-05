@@ -1,19 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
+  Image,
   ActivityIndicator,
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme';
 
-const { width, height } = Dimensions.get('window');
-
 export default function SplashScreen() {
-  const videoRef = useRef<Video>(null);
   const { restoreSession, isLoading } = useAuthStore();
 
   useEffect(() => {
@@ -22,15 +18,12 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Video Background — replace asset when real intro video is available */}
-      <View style={styles.videoContainer}>
-        <Video
-          ref={videoRef}
-          source={require('../../assets/splash-placeholder.png') as any}
-          style={styles.video}
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping
+      {/* Background image */}
+      <View style={styles.bgContainer}>
+        <Image
+          source={require('../../assets/splash-placeholder.png')}
+          style={styles.bgImage}
+          resizeMode="cover"
         />
       </View>
 
@@ -56,13 +49,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.brown900,
   },
-  videoContainer: {
+  bgContainer: {
     ...StyleSheet.absoluteFill,
     opacity: 0.6,
   },
-  video: {
-    width,
-    height,
+  bgImage: {
+    width: '100%',
+    height: '100%',
   },
   overlay: {
     flex: 1,
