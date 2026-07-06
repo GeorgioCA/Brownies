@@ -55,17 +55,18 @@ def rand_dt(days_ago_max=30):
     )
 
 
-async def reset_dummy_data():
-    await init_db()
-    async with async_session() as db:
+async def reset_dummy_data(db=None):
+    own_session = db is None
+    if own_session:
+        await init_db()
+        db = async_session()
+    try:
         dummy_users = (await db.execute(
             select(User).where(User.phone_number.like("999000%"))
         )).scalars().all()
         if not dummy_users:
-            print("No dummy data found.")
-            return
+            return {"deleted": 0, "message": "No dummy data found."}
         dummy_ids = [u.id for u in dummy_users]
-        print(f"Deleting {len(dummy_users)} dummy users and related data...")
         await db.execute(delete(FamilyShare).where(FamilyShare.user_id.in_(dummy_ids)))
         await db.execute(delete(Notification).where(Notification.user_id.in_(dummy_ids)))
         await db.execute(delete(Subscription).where(Subscription.user_id.in_(dummy_ids)))
@@ -83,20 +84,27 @@ async def reset_dummy_data():
         await db.execute(delete(UserPhoto).where(UserPhoto.user_id.in_(dummy_ids)))
         await db.execute(delete(UserLanguage).where(UserLanguage.user_id.in_(dummy_ids)))
         await db.execute(delete(User).where(User.id.in_(dummy_ids)))
-        await db.commit()
-        print("Dummy data deleted successfully.")
+        if own_session:
+            await db.commit()
+        else:
+            await db.flush()
+        return {"deleted": len(dummy_users), "message": f"Deleted {len(dummy_users)} dummy users and related data."}
+    finally:
+        if own_session:
+            await db.close()
 
 
-async def generate():
-    await init_db()
-
-    async with async_session() as db:
+async def generate(db=None):
+    own_session = db is None
+    if own_session:
+        await init_db()
+        db = async_session()
+    try:
         existing = (await db.execute(
             select(User).where(User.phone_number.like("999000%"))
         )).scalars().all()
         if existing:
-            print(f"Dummy data already exists ({len(existing)} users). Use --reset first.")
-            return
+            return {"error": f"Dummy data already exists ({len(existing)} users). Reset first."}
 
         # ── Create users ──
         users = []
@@ -167,7 +175,6 @@ async def generate():
 
         await db.flush()
         user_ids = [u.id for u in users]
-        print(f"Created {len(users)} users.")
 
         # ── Create preferences for each user ──
         for u in users:
@@ -180,7 +187,6 @@ async def generate():
             )
             db.add(pref)
         await db.flush()
-        print("Created user preferences.")
 
         # ── Create swipes (mix of likes and passes) ──
         males = [u for u in users if u.gender == "male"]
@@ -203,12 +209,10 @@ async def generate():
                 db.add(Swipe(swiper_id=f.id, swiped_id=m.id, direction="pass", created_at=rand_dt(60)))
                 swipes_created += 1
         await db.flush()
-        print(f"Created {swipes_created} swipes.")
 
         # ── Create matches (mutual likes) ──
-        # Build a set of mutual like pairs
         likes = (await db.execute(select(Swipe).where(Swipe.direction == "like"))).scalars().all()
-        like_map = {}  # swiper_id -> set of swiped_ids
+        like_map = {}
         for s in likes:
             like_map.setdefault(s.swiper_id, set()).add(s.swiped_id)
 
@@ -229,7 +233,6 @@ async def generate():
                         matches_list.append(m)
                         matches_created += 1
         await db.flush()
-        print(f"Created {matches_created} matches.")
 
         # ── Create messages for matches ──
         messages_created = 0
@@ -250,7 +253,6 @@ async def generate():
                 db.add(msg)
                 messages_created += 1
         await db.flush()
-        print(f"Created {messages_created} messages.")
 
         # ── Create a few reports ──
         for _ in range(3):
@@ -263,7 +265,6 @@ async def generate():
                 type="report",
                 created_at=rand_dt(14),
             ))
-        print("Created 3 reports.")
 
         # ── Create a few subscriptions ──
         premium_users = [u for u in users if u.is_premium]
@@ -276,15 +277,30 @@ async def generate():
                 ends_at=start + timedelta(days=30 if random.random() > 0.5 else 365),
                 is_active=True,
             ))
-        print(f"Created subscriptions for premium users.")
 
-        await db.commit()
-        print("\nDummy data generated successfully!")
-        print(f"  Users:         {len(users)}")
-        print(f"  Matches:       {matches_created}")
-        print(f"  Messages:      {messages_created}")
-        print(f"  Swipes:        {swipes_created}")
-        print(f"  Login:         any phone 99900010xx / test123")
+        if own_session:
+            await db.commit()
+        else:
+            await db.flush()
+
+        result = {
+            "users": len(users),
+            "matches": matches_created,
+            "messages": messages_created,
+            "swipes": swipes_created,
+            "message": f"Created {len(users)} users, {matches_created} matches, {messages_created} messages, {swipes_created} swipes.",
+        }
+        if own_session:
+            print(f"\nDummy data generated successfully!")
+            print(f"  Users:    {result['users']}")
+            print(f"  Matches:  {result['matches']}")
+            print(f"  Messages: {result['messages']}")
+            print(f"  Swipes:   {result['swipes']}")
+            print(f"  Login:    any phone 99900010xx / test123")
+        return result
+    finally:
+        if own_session:
+            await db.close()
 
 
 if __name__ == "__main__":

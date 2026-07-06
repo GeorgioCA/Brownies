@@ -20,6 +20,7 @@ from schemas import (
     AdminLimitsOut, AdminLimitsUpdateRequest, AdminWaitlistOut,
     AdminMatchUpdateRequest, SuccessResponse,
 )
+from generate_dummy_data import generate as generate_dummy, reset_dummy_data
 
 router = APIRouter(prefix=f"{settings.API_V1_PREFIX}/admin", tags=["admin"])
 
@@ -704,3 +705,25 @@ async def get_city_stats(
         select(User.city, func.count()).group_by(User.city).order_by(func.count().desc()).limit(20)
     )
     return [{"city": c, "count": cnt} for c, cnt in result.all() if c]
+
+
+# ── Dummy Data ──
+
+@router.post("/dummy-data/generate")
+async def create_dummy_data(
+    admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await generate_dummy(db)
+    if "error" in result:
+        raise ValidationException(result["error"])
+    return result
+
+
+@router.post("/dummy-data/reset")
+async def clear_dummy_data(
+    admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await reset_dummy_data(db)
+    return result

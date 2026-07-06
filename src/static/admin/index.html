@@ -131,9 +131,21 @@ tailwind.config = {
       <div id="tab-dashboard">
         <h2 class="text-2xl font-extrabold text-brown-900 mb-6">Dashboard Overview</h2>
         <div id="statsGrid" class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8"></div>
-        <div class="bg-white rounded-card shadow-card p-6 border border-brown-200">
+        <div class="bg-white rounded-card shadow-card p-6 border border-brown-200 mb-6">
           <h3 class="text-lg font-bold text-brown-800 mb-3">Quick Stats</h3>
           <div id="quickStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-brown-600"></div>
+        </div>
+        <div class="bg-white rounded-card shadow-card p-6 border border-brown-200">
+          <h3 class="text-lg font-bold text-brown-800 mb-3">Dummy Data</h3>
+          <p class="text-sm text-brown-500 mb-4">Generate or reset test data (20 users, matches, messages)</p>
+          <div class="flex gap-3">
+            <button onclick="generateDummyData()" class="px-6 py-2.5 rounded-btn font-semibold text-sm text-white bg-gradient-to-br from-green-600 to-green-700 shadow-btn hover:-translate-y-0.5 transition-all duration-300">
+              Generate Dummy Data
+            </button>
+            <button onclick="resetDummyData()" class="px-6 py-2.5 rounded-btn font-semibold text-sm text-white bg-gradient-to-br from-rose to-rose-dark shadow-btn hover:-translate-y-0.5 transition-all duration-300">
+              Reset Dummy Data
+            </button>
+          </div>
         </div>
       </div>
 
@@ -513,6 +525,24 @@ async function loadDashboard() {
       <div><span class="text-brown-400">Matches</span> <span class="font-bold text-brown-800 ml-2">${d.total_matches}</span></div>
       <div><span class="text-brown-400">Waitlist</span> <span class="font-bold text-brown-800 ml-2">${d.total_waitlist}</span></div>
     `;
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function generateDummyData() {
+  if (!confirm('Generate dummy data? This will create 20 test users with matches and messages.')) return;
+  try {
+    const result = await api('/admin/dummy-data/generate', { method: 'POST' });
+    showToast(result.message, 'success');
+    loadDashboard();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function resetDummyData() {
+  if (!confirm('Delete all dummy data? This will remove all test users and their data.')) return;
+  try {
+    const result = await api('/admin/dummy-data/reset', { method: 'POST' });
+    showToast(result.message, 'success');
+    loadDashboard();
   } catch (e) { showToast(e.message, 'error'); }
 }
 
