@@ -140,7 +140,7 @@ export default function ProfileScreen(navigation: any): any {
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.editBtn}
-            onPress={() => navigation.navigate('Settings')}
+            onPress={() => navigation.navigate('ProfileSetup')}
             activeOpacity={0.85}
           >
             <Text style={styles.editBtnText}>Edit Profile</Text>

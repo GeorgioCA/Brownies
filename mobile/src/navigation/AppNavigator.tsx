@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 
 import SplashScreen from '../screens/SplashScreen';
@@ -24,15 +25,17 @@ const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused }) {
   const icons = {
-    Discover: focused ? '⊙' : '○',
-    Chats: focused ? '◆' : '◇',
-    Profile: focused ? '●' : '○',
+    Discover: focused ? 'compass' : 'compass-outline',
+    Chats: focused ? 'chatbubbles' : 'chatbubbles-outline',
+    Profile: focused ? 'person' : 'person-outline',
   };
   return (
     <View style={tabStyles.iconContainer}>
-      <Text style={[tabStyles.icon, focused && tabStyles.iconActive]}>
-        {icons[label] || '○'}
-      </Text>
+      <Ionicons
+        name={icons[label] || 'ellipse-outline'}
+        size={24}
+        color={focused ? colors.brown700 : colors.tabInactive}
+      />
       <Text style={[tabStyles.label, focused && tabStyles.labelActive]}>
         {label}
       </Text>
@@ -41,10 +44,8 @@ function TabIcon({ label, focused }) {
 }
 
 const tabStyles = StyleSheet.create({
-  iconContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
-  icon: { fontSize: 22, color: colors.tabInactive },
-  iconActive: { color: colors.brown700 },
-  label: { fontSize: 10, color: colors.tabInactive, marginTop: 2, fontWeight: '600' },
+  iconContainer: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  label: { fontSize: 10, color: colors.tabInactive, marginTop: 4, fontWeight: '600' },
   labelActive: { color: colors.brown700 },
 });
 
@@ -61,8 +62,9 @@ function MainTabs() {
           backgroundColor: colors.white,
           borderTopWidth: 1,
           borderTopColor: colors.brown200,
-          height: 65,
-          paddingBottom: 8,
+          height: 60,
+          paddingBottom: 4,
+          paddingTop: 4,
         },
       })}
     >

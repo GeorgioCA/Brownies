@@ -346,6 +346,7 @@ class AdminDashboardOut(BaseModel):
     total_swipes: int = 0
     total_messages: int = 0
     total_waitlist: int = 0
+    total_matches: int = 0
 
 
 class AdminReportOut(BaseModel):
@@ -463,6 +464,10 @@ class AdminMessageOut(BaseModel):
     content: str
     is_read: bool
     created_at: datetime
+
+
+class AdminMatchUpdateRequest(BaseModel):
+    is_active: Optional[bool] = None
 
 
 class AdminUserUpdateRequest(BaseModel):

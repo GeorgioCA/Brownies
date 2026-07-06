@@ -12,8 +12,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../theme';
 import { useAuthStore } from '../stores/authStore';
+import { apiErrorToString } from '../utils/helpers';
 
-export default function LoginScreen(navigation: any): any {
+export default function LoginScreen({ navigation }: any): any {
   const insets = useSafeAreaInsets();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');

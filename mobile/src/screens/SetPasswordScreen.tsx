@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../theme';
 import { useAuthStore } from '../stores/authStore';
+import { apiErrorToString } from '../utils/helpers';
 
 export default function SetPasswordScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();

@@ -82,6 +82,10 @@ tailwind.config = {
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Chats
       </button>
+      <button onclick="showTab('matches')" data-tab="matches" class="sidebar-link w-full text-left px-4 py-3 rounded-xl font-semibold text-sm text-brown-600 hover:bg-brown-100 hover:text-brown-800 transition flex items-center gap-3">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Matches
+      </button>
       <button onclick="showTab('photos')" data-tab="photos" class="sidebar-link w-full text-left px-4 py-3 rounded-xl font-semibold text-sm text-brown-600 hover:bg-brown-100 hover:text-brown-800 transition flex items-center gap-3">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
         Photos
@@ -181,6 +185,36 @@ tailwind.config = {
             </table>
           </div>
           <div id="chatsPagination" class="px-5 py-3 flex items-center justify-between border-t border-brown-100"></div>
+        </div>
+      </div>
+
+      <!-- MATCHES TAB -->
+      <div id="tab-matches" class="hidden">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h2 class="text-2xl font-extrabold text-brown-900">Matches</h2>
+          <div class="flex gap-3">
+            <select id="matchFilter" onchange="loadMatches()" class="px-4 py-2.5 border border-brown-200 rounded-xl text-sm focus:outline-none focus:border-brown-500 transition bg-white">
+              <option value="all">All Matches</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+        </div>
+        <div class="bg-white rounded-card shadow-card border border-brown-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-brown-50 text-brown-600 font-semibold text-xs uppercase tracking-wider">
+                <tr>
+                  <th class="px-5 py-3 text-left">Match ID</th><th class="px-5 py-3 text-left">User 1</th>
+                  <th class="px-5 py-3 text-left">User 2</th><th class="px-5 py-3 text-center">Msgs</th>
+                  <th class="px-5 py-3 text-left">Matched</th><th class="px-5 py-3 text-center">Status</th>
+                  <th class="px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="matchesTableBody" class="divide-y divide-brown-100"></tbody>
+            </table>
+          </div>
+          <div id="matchesPagination" class="px-5 py-3 flex items-center justify-between border-t border-brown-100"></div>
         </div>
       </div>
 
@@ -385,7 +419,7 @@ tailwind.config = {
 const API = '/api/v1';
 let token = localStorage.getItem('brownies_admin_token');
 let currentTab = 'dashboard';
-let userPage = 1, photoPage = 1, voicePage = 1, reportPage = 1, subPage = 1, chatPage = 1, waitlistPage = 1;
+let userPage = 1, photoPage = 1, voicePage = 1, reportPage = 1, subPage = 1, chatPage = 1, matchPage = 1, waitlistPage = 1;
 
 // ── AUTH ──
 async function doLogin(e) {
@@ -444,6 +478,7 @@ function showTab(name) {
   if (name === 'dashboard') loadDashboard();
   else if (name === 'users') loadUsers();
   else if (name === 'chats') loadChats();
+  else if (name === 'matches') loadMatches();
   else if (name === 'photos') loadPhotos();
   else if (name === 'voice') loadVoicePrompts();
   else if (name === 'reports') loadReports();
@@ -475,6 +510,7 @@ async function loadDashboard() {
       <div><span class="text-brown-400">Photos</span> <span class="font-bold text-brown-800 ml-2">${d.total_photos}</span></div>
       <div><span class="text-brown-400">Swipes</span> <span class="font-bold text-brown-800 ml-2">${d.total_swipes}</span></div>
       <div><span class="text-brown-400">Messages</span> <span class="font-bold text-brown-800 ml-2">${d.total_messages}</span></div>
+      <div><span class="text-brown-400">Matches</span> <span class="font-bold text-brown-800 ml-2">${d.total_matches}</span></div>
       <div><span class="text-brown-400">Waitlist</span> <span class="font-bold text-brown-800 ml-2">${d.total_waitlist}</span></div>
     `;
   } catch (e) { showToast(e.message, 'error'); }
@@ -634,6 +670,54 @@ async function viewChatMessages(matchId, userName1, userName2) {
       `).join(''));
 
     modal.classList.remove('hidden');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ── MATCHES ──
+async function loadMatches(page = 1) {
+  matchPage = page;
+  try {
+    const status = document.getElementById('matchFilter')?.value || 'all';
+    const data = await api(`/admin/matches?page=${page}&per_page=20&status=${status}`);
+    document.getElementById('matchesTableBody').innerHTML = (data.length === 0)
+      ? '<tr><td colspan="7" class="px-5 py-12 text-center text-brown-400">No matches found</td></tr>'
+      : data.map(m => `
+        <tr class="hover:bg-brown-50 transition">
+          <td class="px-5 py-3 font-mono text-brown-400">#${m.id}</td>
+          <td class="px-5 py-3 font-semibold text-brown-800">${esc(m.user1_name)} <span class="text-brown-400 font-normal">(#${m.user1_id})</span></td>
+          <td class="px-5 py-3 font-semibold text-brown-800">${esc(m.user2_name)} <span class="text-brown-400 font-normal">(#${m.user2_id})</span></td>
+          <td class="px-5 py-3 text-center font-semibold text-brown-700">${m.message_count}</td>
+          <td class="px-5 py-3 text-brown-500 text-xs">${fmtDate(m.matched_at)}</td>
+          <td class="px-5 py-3 text-center">
+            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${m.is_active ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose'}">
+              ${m.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-right space-x-1">
+            <button onclick="viewChatMessages(${m.id}, '${esc(m.user1_name)}', '${esc(m.user2_name)}')" class="px-3 py-1.5 text-xs font-semibold rounded-btn border border-brown-300 text-brown-600 hover:bg-brown-100 transition">Messages</button>
+            <button onclick="toggleMatchActive(${m.id}, ${!m.is_active})" class="px-3 py-1.5 text-xs font-semibold rounded-btn border ${m.is_active ? 'border-rose text-rose hover:bg-rose-50' : 'border-green-500 text-green-600 hover:bg-green-50'} transition">${m.is_active ? 'Deactivate' : 'Activate'}</button>
+            <button onclick="deleteMatch(${m.id})" class="px-3 py-1.5 text-xs font-semibold rounded-btn border border-rose text-rose hover:bg-rose-50 transition">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    renderPagination('matches', matchPage, data.length >= 20);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function toggleMatchActive(id, active) {
+  try {
+    await api(`/admin/matches/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: active }) });
+    showToast(`Match ${active ? 'activated' : 'deactivated'}`, 'success');
+    loadMatches(matchPage);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteMatch(id) {
+  if (!confirm('Delete this match? This will also delete all messages in this conversation.')) return;
+  try {
+    await api(`/admin/matches/${id}`, { method: 'DELETE' });
+    showToast('Match deleted', 'success');
+    loadMatches(matchPage);
   } catch (e) { showToast(e.message, 'error'); }
 }
 
@@ -936,7 +1020,7 @@ async function loadStats() {
 function renderPagination(prefix, page, hasMore) {
   const el = document.getElementById(`${prefix}Pagination`);
   if (!el) return;
-  const fnMap = { users: 'loadUsers', photos: 'loadPhotos', voice: 'loadVoicePrompts', reports: 'loadReports', subs: 'loadSubscriptions', chats: 'loadChats', waitlist: 'loadWaitlist' };
+  const fnMap = { users: 'loadUsers', photos: 'loadPhotos', voice: 'loadVoicePrompts', reports: 'loadReports', subs: 'loadSubscriptions', chats: 'loadChats', matches: 'loadMatches', waitlist: 'loadWaitlist' };
   el.innerHTML = `
     <span class="text-sm text-brown-500">Page ${page}</span>
     <div class="flex gap-2">

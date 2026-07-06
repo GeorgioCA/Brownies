@@ -17,7 +17,7 @@ import { useAuthStore } from '../stores/authStore';
 
 export default function PhoneInputScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const [phone, setPhone] = useState('+91');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const sendOtp = useAuthStore((s) => s.sendOtp);
 
@@ -57,7 +57,7 @@ export default function PhoneInputScreen({ navigation }: any) {
             style={styles.input}
             value={phone}
             onChangeText={setPhone}
-            placeholder="+91 98765 43210"
+            placeholder="98765 43210"
             placeholderTextColor={colors.textMuted}
             keyboardType="phone-pad"
             autoFocus
