@@ -1,14 +1,15 @@
 import asyncio
 import random
+import sys
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from core.database import async_session, init_db
 from core.security import hash_password
 from models import (
-    User, UserPhoto, UserPreferences, Swipe, Match, Message,
-    BlockReport, Subscription,
+    User, UserPhoto, UserLanguage, UserPreferences, Swipe, Match, Message,
+    BlockReport, Subscription, Notification, FamilyShare,
 )
 
 FIRST_NAMES_M = ["Rahul", "Arjun", "Vikram", "Karan", "Amit", "Siddharth", "Rohan", "Aditya", "Nikhil", "Deepak"]
@@ -54,13 +55,47 @@ def rand_dt(days_ago_max=30):
     )
 
 
+async def reset_dummy_data():
+    await init_db()
+    async with async_session() as db:
+        dummy_users = (await db.execute(
+            select(User).where(User.phone_number.like("999000%"))
+        )).scalars().all()
+        if not dummy_users:
+            print("No dummy data found.")
+            return
+        dummy_ids = [u.id for u in dummy_users]
+        print(f"Deleting {len(dummy_users)} dummy users and related data...")
+        await db.execute(delete(FamilyShare).where(FamilyShare.user_id.in_(dummy_ids)))
+        await db.execute(delete(Notification).where(Notification.user_id.in_(dummy_ids)))
+        await db.execute(delete(Subscription).where(Subscription.user_id.in_(dummy_ids)))
+        await db.execute(delete(BlockReport).where(
+            BlockReport.reporter_id.in_(dummy_ids) | BlockReport.reported_id.in_(dummy_ids)
+        ))
+        await db.execute(delete(Message).where(Message.sender_id.in_(dummy_ids)))
+        await db.execute(delete(Match).where(
+            Match.user1_id.in_(dummy_ids) | Match.user2_id.in_(dummy_ids)
+        ))
+        await db.execute(delete(Swipe).where(
+            Swipe.swiper_id.in_(dummy_ids) | Swipe.swiped_id.in_(dummy_ids)
+        ))
+        await db.execute(delete(UserPreferences).where(UserPreferences.user_id.in_(dummy_ids)))
+        await db.execute(delete(UserPhoto).where(UserPhoto.user_id.in_(dummy_ids)))
+        await db.execute(delete(UserLanguage).where(UserLanguage.user_id.in_(dummy_ids)))
+        await db.execute(delete(User).where(User.id.in_(dummy_ids)))
+        await db.commit()
+        print("Dummy data deleted successfully.")
+
+
 async def generate():
     await init_db()
 
     async with async_session() as db:
-        existing = (await db.execute(select(User).where(User.phone_number != "0000000000"))).scalars().all()
+        existing = (await db.execute(
+            select(User).where(User.phone_number.like("999000%"))
+        )).scalars().all()
         if existing:
-            print(f"Dummy data already exists ({len(existing)} users). Skipping.")
+            print(f"Dummy data already exists ({len(existing)} users). Use --reset first.")
             return
 
         # ── Create users ──
@@ -147,17 +182,25 @@ async def generate():
         await db.flush()
         print("Created user preferences.")
 
-        # ── Create swipes (likes crossing gender lines) ──
+        # ── Create swipes (mix of likes and passes) ──
         males = [u for u in users if u.gender == "male"]
         females = [u for u in users if u.gender == "female"]
         swipes_created = 0
         for m in males:
-            for f in random.sample(females, min(5, len(females))):
+            targets = random.sample(females, min(4, len(females)))
+            for f in targets[:2]:
                 db.add(Swipe(swiper_id=m.id, swiped_id=f.id, direction="like", created_at=rand_dt(60)))
                 swipes_created += 1
+            for f in targets[2:]:
+                db.add(Swipe(swiper_id=m.id, swiped_id=f.id, direction="pass", created_at=rand_dt(60)))
+                swipes_created += 1
         for f in females:
-            for m in random.sample(males, min(5, len(males))):
+            targets = random.sample(males, min(4, len(males)))
+            for m in targets[:2]:
                 db.add(Swipe(swiper_id=f.id, swiped_id=m.id, direction="like", created_at=rand_dt(60)))
+                swipes_created += 1
+            for m in targets[2:]:
+                db.add(Swipe(swiper_id=f.id, swiped_id=m.id, direction="pass", created_at=rand_dt(60)))
                 swipes_created += 1
         await db.flush()
         print(f"Created {swipes_created} swipes.")
@@ -245,4 +288,7 @@ async def generate():
 
 
 if __name__ == "__main__":
-    asyncio.run(generate())
+    if "--reset" in sys.argv:
+        asyncio.run(reset_dummy_data())
+    else:
+        asyncio.run(generate())
